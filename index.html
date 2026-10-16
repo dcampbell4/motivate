@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mamba Mode</title>
+<meta name="theme-color" content="#0b0b0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mamba">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<style>
+  :root {
+    --bg: #0b0b0f;
+    --card: #16161d;
+    --card2: #1f1f29;
+    --line: #2c2c3a;
+    --text: #f4f4f6;
+    --muted: #9a9aab;
+    --gold: #fdb927;
+    --purple: #7a3ec2;
+    --red: #e03a3e;
+    --green: #2ecc71;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px; line-height: 1.4;
+    padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 90px);
+    max-width: 560px; margin: 0 auto;
+  }
+  h1 { font-size: 28px; margin: 4px 0 2px; letter-spacing: -0.5px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin: 24px 0 8px; }
+  p { margin: 6px 0; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .gold { color: var(--gold); }
+  .red { color: var(--red); }
+  .green { color: var(--green); }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+  .headline { font-size: 20px; font-weight: 700; line-height: 1.3; }
+  .headline-card { border-left: 4px solid var(--gold); }
+  .headline-card.harsh { border-left-color: var(--red); }
+
+  .streaks { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .streak { text-align: center; padding: 16px 8px; }
+  .streak .num { font-size: 56px; font-weight: 800; line-height: 1; margin: 6px 0; font-variant-numeric: tabular-nums; }
+  .streak .label { font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); }
+  .streak .ghost { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; margin-top: 8px; }
+  .pill.done { background: rgba(46,204,113,.15); color: var(--green); }
+  .pill.open { background: rgba(253,185,39,.15); color: var(--gold); }
+  .pill.bad { background: rgba(224,58,62,.15); color: var(--red); }
+
+  button { font: inherit; border: 0; border-radius: 12px; padding: 14px 16px; font-weight: 700; cursor: pointer; color: var(--text); background: var(--card2); width: 100%; }
+  button:active { transform: scale(.98); }
+  .btn-gold { background: var(--gold); color: #111; }
+  .btn-purple { background: var(--purple); }
+  .btn-red { background: var(--red); }
+  .btn-ghost { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  .stack > * + * { margin-top: 10px; }
+
+  .progress-bar { height: 10px; background: var(--card2); border-radius: 99px; overflow: hidden; margin: 10px 0 4px; }
+  .progress-bar > div { height: 100%; background: linear-gradient(90deg, var(--purple), var(--gold)); border-radius: 99px; transition: width .4s; }
+
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .chip { width: auto; padding: 8px 14px; border-radius: 99px; font-size: 14px; background: var(--card2); color: var(--muted); }
+  .chip.on { background: var(--gold); color: #111; }
+
+  .drill-name { font-size: 30px; font-weight: 800; margin: 4px 0; line-height: 1.15; }
+  .drill-amount { font-size: 22px; font-weight: 700; color: var(--gold); }
+  .timer { font-size: 64px; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; margin: 8px 0; }
+
+  .dots { display: grid; grid-template-columns: 70px repeat(14, 1fr); gap: 4px; align-items: center; font-size: 11px; }
+  .dot { aspect-ratio: 1; border-radius: 4px; background: var(--card2); }
+  .dot.ok { background: var(--green); }
+  .dot.bad { background: var(--red); }
+  .dot.today { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+  .vs { display: grid; grid-template-columns: 1fr auto auto; gap: 6px 14px; font-variant-numeric: tabular-nums; }
+  .vs .h { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+  label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+  input, select, textarea { font: inherit; width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card2); color: var(--text); }
+  textarea { min-height: 90px; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+
+  .url { font-family: ui-monospace, Menlo, monospace; font-size: 12px; word-break: break-all; background: var(--card2); padding: 8px; border-radius: 8px; margin: 6px 0; }
+  ol.steps { padding-left: 20px; margin: 6px 0; }
+  ol.steps li { margin: 6px 0; }
+
+  nav { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(11,11,15,.95); backdrop-filter: blur(10px); border-top: 1px solid var(--line); display: flex; padding: 6px 6px calc(env(safe-area-inset-bottom) + 6px); z-index: 10; }
+  nav button { background: transparent; color: var(--muted); font-size: 11px; padding: 8px 2px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  nav button .ico { font-size: 22px; line-height: 1; }
+  nav button.on { color: var(--gold); }
+
+  .screen { display: none; }
+  .screen.on { display: block; }
+
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.8); display: none; align-items: flex-end; justify-content: center; z-index: 20; padding: 16px; }
+  .modal.on { display: flex; }
+  .modal .sheet { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 20px 16px calc(env(safe-area-inset-bottom) + 16px); width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+
+  .toast { position: fixed; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom) + 84px); background: var(--gold); color: #111; padding: 14px 16px; border-radius: 14px; font-weight: 700; z-index: 30; opacity: 0; transform: translateY(10px); transition: all .25s; pointer-events: none; max-width: 528px; margin: 0 auto; }
+  .toast.on { opacity: 1; transform: none; }
+  .toast.harsh { background: var(--red); color: #fff; }
+
+  svg.chart { width: 100%; height: 160px; display: block; }
+</style>
+</head>
+<body>
+
+<!-- ============ TODAY ============ -->
+<section class="screen on" id="screen-today">
+  <p class="muted small" id="today-date"></p>
+  <h1 id="greeting">Get to work.</h1>
+
+  <div class="card headline-card" id="headline-card">
+    <div class="headline" id="headline"></div>
+  </div>
+
+  <div class="streaks">
+    <div class="card streak">
+      <div class="label">Workout streak</div>
+      <div class="num" id="ws-num">0</div>
+      <div class="ghost" id="ws-ghost"></div>
+      <div id="ws-pill"></div>
+    </div>
+    <div class="card streak">
+      <div class="label">No-sugar streak</div>
+      <div class="num" id="ss-num">0</div>
+      <div class="ghost" id="ss-ghost"></div>
+      <div id="ss-pill"></div>
+    </div>
+  </div>
+
+  <h2>Today's work</h2>
+  <div class="card stack">
+    <div>
+      <strong>Drills: <span id="drill-count">0</span> / 2</strong>
+      <span class="muted small"> · or one gym session</span>
+      <div class="progress-bar"><div id="drill-bar" style="width:0%"></div></div>
+    </div>
+    <button class="btn-gold" onclick="go('drill')">Give me a drill</button>
+    <button id="gym-btn" class="btn-purple" onclick="toggleGym()">I went to the gym today</button>
+  </div>
+
+  <h2>Sugar check</h2>
+  <div class="card stack" id="yesterday-sugar" style="display:none">
+    <p><strong>You never checked in yesterday.</strong> Were you clean? Be honest. Lying to an app is a new low.</p>
+    <div class="row">
+      <button class="btn-gold" onclick="setSugar(offsetKey(-1),'clean')">Clean</button>
+      <button class="btn-red" onclick="setSugar(offsetKey(-1),'broke')">Ate sweets</button>
+    </div>
+  </div>
+  <div class="card stack">
+    <p id="sugar-status" class="muted">No sweets, no desserts, no soda, no sweet coffee drinks. Fruit is fine. Check in tonight.</p>
+    <div class="row">
+      <button class="btn-gold" onclick="setSugar(todayKey(),'clean')">Clean today</button>
+      <button class="btn-red" onclick="setSugar(todayKey(),'broke')">I ate sweets</button>
+    </div>
+    <button class="btn-ghost" onclick="openCraving()">I'm craving sweets right now</button>
+  </div>
+</section>
+
+<!-- ============ DRILL ============ -->
+<section class="screen" id="screen-drill">
+  <h1>Mamba Check</h1>
+  <p class="muted" id="drill-sub">Small work, every day. That's how it's built.</p>
+  <div class="chips" id="drill-chips"></div>
+
+  <div class="card" id="drill-card">
+    <div class="muted small" id="drill-cat"></div>
+    <div class="drill-name" id="drill-name"></div>
+    <div class="drill-amount" id="drill-amount"></div>
+    <p class="muted" id="drill-cue"></p>
+    <div id="drill-timer-wrap" style="display:none">
+      <div class="timer" id="drill-timer">0:00</div>
+      <button class="btn-purple" id="drill-timer-btn" onclick="startDrillTimer()">Start timer</button>
+    </div>
+  </div>
+
+  <div class="stack">
+    <button class="btn-gold" id="drill-done-btn" onclick="drillDone()">Done. Log it.</button>
+    <div class="row">
+      <button onclick="newDrill()">Swap drill</button>
+      <button class="btn-ghost" onclick="openExcuses()">I have an excuse…</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROGRESS ============ -->
+<section class="screen" id="screen-progress">
+  <h1>The Film Room</h1>
+  <p class="muted">The numbers don't lie. Do you?</p>
+
+  <h2>Weight</h2>
+  <div class="card">
+    <div id="weight-summary" class="muted">Set your start and goal weight in Setup first.</div>
+    <div class="progress-bar"><div id="weight-bar" style="width:0%"></div></div>
+    <div id="weight-chart"></div>
+    <label for="weigh-input">Weekly weigh-in</label>
+    <div class="row">
+      <input id="weigh-input" type="number" inputmode="decimal" step="0.1" placeholder="Today's weight">
+      <button class="btn-gold" style="flex:0 0 110px" onclick="logWeight()">Log it</button>
+    </div>
+    <p class="small" id="weigh-nag"></p>
+  </div>
+
+  <h2>You vs. Ghost You (last week)</h2>
+  <div class="card vs" id="vs"></div>
+
+  <h2>Last 14 days</h2>
+  <div class="card">
+    <div class="dots" id="dots"></div>
+    <p class="small muted" style="margin-top:10px">Green = won the day. Red = lost it. Empty = never showed up.</p>
+  </div>
+
+  <h2>Records</h2>
+  <div class="card" id="records"></div>
+</section>
+
+<!-- ============ SETUP ============ -->
+<section class="screen" id="screen-setup">
+  <h1>Setup</h1>
+
+  <h2>You</h2>
+  <div class="card">
+    <label for="set-name">What should I call you?</label>
+    <input id="set-name" placeholder="Rookie">
+    <div class="row">
+      <div><label for="set-start">Start weight</label><input id="set-start" type="number" inputmode="decimal" step="0.1"></div>
+      <div><label for="set-goal">Goal weight</label><input id="set-goal" type="number" inputmode="decimal" step="0.1"></div>
+    </div>
+    <label for="set-unit">Units</label>
+    <select id="set-unit"><option value="lb">lb</option><option value="kg">kg</option></select>
+    <div style="margin-top:14px"><button class="btn-gold" onclick="saveProfile()">Save</button></div>
+  </div>
+
+  <h2>Phone reminders (iPhone Shortcuts)</h2>
+  <div class="card">
+    <p>Make 5 automations in the <strong>Shortcuts</strong> app. Each one sends a notification, and tapping it opens a drill here.</p>
+    <ol class="steps">
+      <li>Open <strong>Shortcuts</strong> → <strong>Automation</strong> tab → <strong>+</strong> (or "New Automation").</li>
+      <li>Choose <strong>Time of Day</strong>. Set the time, pick <strong>Weekly</strong>, and select Mon–Fri.</li>
+      <li>Choose <strong>Run After Confirmation</strong>. This is what makes a notification pop up. Tap <strong>Next</strong>.</li>
+      <li>Pick <strong>New Blank Automation</strong>, add the <strong>Open URLs</strong> action, and paste the link for that time from the list below.</li>
+      <li>Tap <strong>Done</strong>. Do this for all 5 times.</li>
+    </ol>
+    <div id="reminder-urls"></div>
+    <p class="small muted">Tip: tap a link to copy it. Menu names can differ slightly between iOS versions.</p>
+  </div>
+
+  <h2>Backup</h2>
+  <div class="card stack">
+    <p class="small muted">Your streaks live on this phone only. Every so often, copy a backup and paste it into Notes.</p>
+    <button onclick="exportData()">Copy backup</button>
+    <textarea id="import-box" placeholder="Paste a backup here to restore it"></textarea>
+    <button class="btn-ghost" onclick="importData()">Restore from backup</button>
+    <button class="btn-ghost red" onclick="resetAll()">Erase everything</button>
+  </div>
+</section>
+
+<!-- ============ MODALS ============ -->
+<div class="modal" id="excuse-modal" onclick="if(event.target===this)closeModal('excuse-modal')">
+  <div class="sheet">
+    <h2 style="margin-top:0">Go ahead. Say it.</h2>
+    <div class="stack" id="excuse-list"></div>
+    <div id="excuse-roast" style="display:none">
+      <div class="card headline-card harsh"><div class="headline" id="excuse-roast-text"></div></div>
+      <div class="stack">
+        <button class="btn-gold" onclick="closeModal('excuse-modal')">Fine. I'll do it.</button>
+        <button class="btn-ghost" onclick="skipDrill()">I'm still skipping it</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="craving-modal">
+  <div class="sheet">
+    <h2 style="margin-top:0">Outlast it</h2>
+    <p>Cravings fade in about 10 minutes. Drink a glass of water, walk away from the sweets, and don't open that wrapper.</p>
+    <div class="timer" id="craving-timer">10:00</div>
+    <div class="card headline-card"><div class="headline" id="craving-line"></div></div>
+    <div class="stack">
+      <button class="btn-gold" onclick="cravingWin()">I beat it</button>
+      <button class="btn-red" onclick="cravingLoss()">I caved</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<nav>
+  <button class="on" data-go="today" onclick="go('today')"><span class="ico">🔥</span>Today</button>
+  <button data-go="drill" onclick="go('drill')"><span class="ico">💪</span>Drill</button>
+  <button data-go="progress" onclick="go('progress')"><span class="ico">📈</span>Progress</button>
+  <button data-go="setup" onclick="go('setup')"><span class="ico">⚙️</span>Setup</button>
+</nav>
+
+<script>
+/* =====================================================================
+   MESSAGES. Edit these freely. {name} is replaced with your name.
+   ===================================================================== */
+const MSG = {
+  grind: [
+    "Kobe was in the gym at 4am. You're on your phone. Go do a drill, {name}.",
+    "Nobody is coming to save you. Nobody is coming to do your pushups for you either.",
+    "Ghost You already did a drill today. You going to let that slide?",
+    "Mamba mentality isn't a mood, {name}. It's a schedule. Check your schedule.",
+    "Greatness is boring. It's 20 squats on a random Tuesday. Go.",
+    "MJ took everything personally. Take this personally: you haven't moved yet today.",
+    "The version of you that quits is warming up. Don't give it minutes."
+  ],
+  fire: [
+    "Both boxes checked. That's what killers do, {name}. Do it again tomorrow.",
+    "Workout done. Sugar clean. Ghost You is getting nervous.",
+    "That's a W. Don't celebrate long. Champions reload."
+  ],
+  sugarBroke: [
+    "You ate the sweets. Kobe didn't negotiate with himself, and you lost an argument with a cookie.",
+    "The cookie won. The cookie doesn't even have hands, {name}.",
+    "Yesterday the dessert cooked you. Today you cook it. Clean slate. Starting now.",
+    "Your willpower called in sick. Tell it to show up today."
+  ],
+  workoutBroke: [
+    "Streak's dead. You let it die. Pick it up off the floor and start counting again.",
+    "Yesterday you sat out. Bench players don't get rings, {name}.",
+    "You skipped. Ghost You didn't. That's the gap. Close it today."
+  ],
+  drillDone: [
+    "That's one. Ghost You is sweating.",
+    "Logged. Small work stacks into big work.",
+    "Good. Now don't get comfortable.",
+    "That's how it's done. Quietly. Every day.",
+    "Bucket. Next one in a couple of hours."
+  ],
+  dayWon: [
+    "Workout streak alive. That's a killer move, {name}.",
+    "Day secured. Ghost You goes to bed mad tonight."
+  ],
+  sugarClean: [
+    "Clean day. The sweets didn't even get a shot off.",
+    "No sugar. That's defense. Championships are won on defense.",
+    "Locked in. That's discipline, {name}."
+  ],
+  sugarConfess: [
+    "Weak. But you admitted it, and that counts for something. Streak resets to zero. Start the next one tomorrow.",
+    "You folded. The dessert didn't even play defense. Back to zero, {name}.",
+    "Sugar 1, You 0. Bad loss. Better losers become winners. Run it back."
+  ],
+  gymNudge: [
+    "Gym time. You already know the excuse you're about to make. Don't.",
+    "Ghost You is already in the parking lot. Go.",
+    "Get in, put in work, get out. One hour. Be the one who shows up."
+  ],
+  craving: [
+    "That craving is a test. Champions pass tests.",
+    "Every minute you wait, the craving gets weaker and you get stronger.",
+    "You don't want the sugar. You want the win. Hold.",
+    "Kobe hit two free throws on a torn Achilles. You can walk past a candy bar.",
+    "Drink water. Walk away. Make the craving chase you.",
+    "Imagine Ghost You eating that cookie. Pathetic, right? Don't be Ghost You.",
+    "Nobody ever regretted not eating a donut."
+  ],
+  cravingWin: [
+    "Craving crushed. That's a stop on defense.",
+    "You won that possession. Write it down."
+  ],
+  cravingLoss: [
+    "You caved. Log it on the Today screen and own it. Tomorrow you're 1–0.",
+    "The craving won. You've got all night to think about that."
+  ],
+  skip: [
+    "Noted. Ghost You also noted it. Ghost You is laughing.",
+    "Skipped. That's how streaks die: one 'just this once' at a time.",
+    "Fine. Remember this moment when the streak says zero."
+  ]
+};
+
+const EXCUSES = [
+  { text: "I don't have time.", roast: "You have time to scroll. You have time to read this. This takes 90 seconds. That excuse is a lie and you know it." },
+  { text: "I'm too tired.", roast: "Tired? MJ dropped 38 with the flu. You're being asked for 15 pushups. Move." },
+  { text: "People will see me.", roast: "Good. Let them see someone who does the work. Embarrassment fades. Results don't." },
+  { text: "I'll do it later.", roast: "'Later' is where workouts go to die. Later never shows up. Now does." },
+  { text: "I already did enough today.", roast: "Enough? Kobe's 'enough' was 4am, again at noon, and again at night. Do one more." },
+  { text: "I'm not in the mood.", roast: "Nobody asked about your mood. Champions don't wait to feel like it. Feelings follow action." },
+  { text: "I'm wearing work clothes.", roast: "Wall sits and calf raises don't wrinkle shirts. Pick a desk drill. No more excuses." }
+];
+
+const DRILLS = {
+  desk: [
+    { name: "Desk pushups", amount: "15 reps", cue: "Hands on the desk edge, body in a straight line, chest to the desk." },
+    { name: "Chair squats", amount: "20 reps", cue: "Lower until you barely touch the chair, then drive back up. Don't sit." },
+    { name: "Calf raises", amount: "30 reps", cue: "Up on your toes, pause, and lower slowly. Hold the desk if you need to." },
+    { name: "Wall sit", amount: "45 seconds", secs: 45, cue: "Back flat on the wall, thighs parallel to the floor. It's supposed to burn." },
+    { name: "Seated leg raises", amount: "15 each leg", cue: "Sit tall, straighten one leg, hold for 2 seconds, and lower it." },
+    { name: "Desk plank", amount: "40 seconds", secs: 40, cue: "Forearms on the desk, feet back, body straight. Squeeze everything." },
+    { name: "March in place", amount: "60 seconds", secs: 60, cue: "Knees high, arms pumping. Look like you mean it." },
+    { name: "Chair dips", amount: "12 reps", cue: "Use only a chair with no wheels. Hands on the edge, lower, then press up." }
+  ],
+  floor: [
+    { name: "Pushups", amount: "20 reps", cue: "Full range. Break it into sets if you have to, but get all 20." },
+    { name: "Plank", amount: "60 seconds", secs: 60, cue: "Elbows under shoulders, hips level. Don't sag." },
+    { name: "Burpees", amount: "10 reps", cue: "Chest to the floor, jump at the top. No shortcuts." },
+    { name: "Reverse lunges", amount: "12 each leg", cue: "Step back, back knee nearly to the floor, drive up through the front heel." },
+    { name: "Mountain climbers", amount: "40 seconds", secs: 40, cue: "Fast knees, flat back. Make it ugly." },
+    { name: "Squat jumps", amount: "15 reps", cue: "Squat deep, explode up, land soft." },
+    { name: "Glute bridges", amount: "20 reps", cue: "Drive through your heels and squeeze at the top for a second." },
+    { name: "Hollow hold", amount: "30 seconds", secs: 30, cue: "Lower back pressed down, arms and legs reaching long." }
+  ],
+  walk: [
+    { name: "Brisk walk", amount: "10 minutes", secs: 600, cue: "Walk like you're late for a flight. No strolling." },
+    { name: "Stair attack", amount: "3 flights, twice", cue: "Up fast, down easy. Skip the elevator for the rest of the day." },
+    { name: "Building laps", amount: "5 minutes", secs: 300, cue: "Laps around the building or the hallways. Keep the pace up." },
+    { name: "Power walk", amount: "5 minutes", secs: 300, cue: "Long strides, arms swinging. Get your heart rate up." },
+    { name: "Walk your next call", amount: "Whole call", cue: "Your next phone call happens on your feet and moving." }
+  ]
+};
+const CAT_LABEL = { desk: "Desk-friendly", floor: "Floor work", walk: "Walk", any: "Surprise me", gym: "Gym" };
+
+/* =====================================================================
+   DATA (saved on this phone)
+   ===================================================================== */
+const KEY = "mamba.v1";
+let S = load();
+function load() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(KEY));
+    if (raw && raw.days) return raw;
+  } catch (e) {}
+  return { profile: { name: "", start: null, goal: null, unit: "lb" }, days: {}, weighIns: [] };
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function day(k) { return S.days[k] || (S.days[k] = { drills: 0, gym: false, sugar: null, cravings: 0 }); }
+function peek(k) { return S.days[k] || {}; }
+
+/* ---------- dates ---------- */
+function keyOf(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function offsetKey(n) { const d = new Date(); d.setDate(d.getDate() + n); return keyOf(d); }
+function todayKey() { return offsetKey(0); }
+function daysBetween(a, b) { return Math.round((new Date(b + "T12:00") - new Date(a + "T12:00")) / 864e5); }
+
+/* ---------- streak math ---------- */
+const workoutWon = (k) => { const d = peek(k); return !!d.gym || (d.drills || 0) >= 2; };
+const sugarWon = (k) => peek(k).sugar === "clean";
+
+// Counts back from today. Today only counts if it's already won (otherwise it's still in play).
+function currentStreak(test) {
+  let n = 0, i = test(todayKey()) ? 0 : -1;
+  while (test(offsetKey(i))) { n++; i--; }
+  return n;
+}
+function bestStreak(test) {
+  const keys = Object.keys(S.days).sort();
+  if (!keys.length) return 0;
+  let best = 0, run = 0, d = new Date(keys[0] + "T12:00");
+  const end = new Date();
+  while (d <= end) {
+    if (test(keyOf(d))) { run++; best = Math.max(best, run); } else run = 0;
+    d.setDate(d.getDate() + 1);
+  }
+  return best;
+}
+
+/* ---------- helpers ---------- */
+const $ = (id) => document.getElementById(id);
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const nm = () => S.profile.name || "Rookie";
+const fill = (s) => s.replace(/\{name\}/g, nm());
+let toastTimer;
+function toast(text, harsh) {
+  const t = $("toast");
+  t.textContent = fill(text);
+  t.className = "toast on" + (harsh ? " harsh" : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (t.className = "toast"), 3200);
+}
+function pill(state) {
+  if (state === "done") return '<span class="pill done">Won today ✓</span>';
+  if (state === "bad") return '<span class="pill bad">Lost today</span>';
+  return '<span class="pill open">Not yet</span>';
+}
+
+/* =====================================================================
+   NAVIGATION
+   ===================================================================== */
+function go(name) {
+  document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("on", s.id === "screen-" + name));
+  document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("on", b.dataset.go === name));
+  if (name === "drill" && !currentDrill) newDrill();
+  render();
+  window.scrollTo(0, 0);
+}
+function openModal(id) { $(id).classList.add("on"); }
+function closeModal(id) { $(id).classList.remove("on"); }
+
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+let headlineFixed = null; // keeps the headline from changing on every tap
+function render() {
+  const t = todayKey(), y = offsetKey(-1), td = peek(t);
+  $("today-date").textContent = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  $("greeting").textContent = S.profile.name ? "Let's work, " + S.profile.name + "." : "Get to work.";
+
+  // Streak cards
+  const ws = currentStreak(workoutWon), ss = currentStreak(sugarWon);
+  const wb = bestStreak(workoutWon), sb = bestStreak(sugarWon);
+  $("ws-num").textContent = ws;
+  $("ss-num").textContent = ss;
+  $("ws-ghost").textContent = ghostLine(ws, wb);
+  $("ss-ghost").textContent = ghostLine(ss, sb);
+  $("ws-pill").innerHTML = pill(workoutWon(t) ? "done" : "open");
+  $("ss-pill").innerHTML = pill(td.sugar === "clean" ? "done" : td.sugar === "broke" ? "bad" : "open");
+
+  // Today's work
+  const drills = td.drills || 0;
+  $("drill-count").textContent = drills;
+  $("drill-bar").style.width = Math.min(100, drills * 50) + "%";
+  $("gym-btn").textContent = td.gym ? "Gym logged ✓ (tap to undo)" : "I went to the gym today";
+
+  // Sugar
+  const ys = peek(y).sugar;
+  const showYesterday = !ys && Object.keys(S.days).some((k) => k < y);
+  $("yesterday-sugar").style.display = showYesterday ? "block" : "none";
+  $("sugar-status").innerHTML =
+    td.sugar === "clean" ? '<span class="green">Checked in clean. Hold the line until bedtime.</span>'
+    : td.sugar === "broke" ? '<span class="red">Logged a sugar day. It happened. Tomorrow you go 1–0.</span>'
+    : "No sweets, no desserts, no soda, no sweet coffee drinks. Fruit is fine. Check in tonight.";
+
+  // Headline
+  if (!headlineFixed) headlineFixed = chooseHeadline();
+  if (workoutWon(t) && td.sugar === "clean") headlineFixed = { text: pick(MSG.fire), harsh: false };
+  $("headline").textContent = fill(headlineFixed.text);
+  $("headline-card").classList.toggle("harsh", headlineFixed.harsh);
+
+  renderProgress();
+  renderSetupUrls();
+}
+
+function ghostLine(cur, best) {
+  if (best === 0) return "Ghost You: no record yet";
+  if (cur >= best) return "New record. Ghost You is chasing you now.";
+  return "Ghost You's best: " + best + " (" + (best - cur) + " to beat)";
+}
+
+function chooseHeadline() {
+  const y = offsetKey(-1), y2 = offsetKey(-2);
+  if (peek(y).sugar === "broke") return { text: pick(MSG.sugarBroke), harsh: true };
+  if (!workoutWon(y) && workoutWon(y2)) return { text: pick(MSG.workoutBroke), harsh: true };
+  return { text: pick(MSG.grind), harsh: false };
+}
+
+/* =====================================================================
+   ACTIONS: workouts
+   ===================================================================== */
+let currentDrill = null, currentCat = "any", drillTimer = null;
+
+function buildChips() {
+  $("drill-chips").innerHTML = ["any", "desk", "floor", "walk", "gym"]
+    .map((c) => `<button class="chip ${c === currentCat ? "on" : ""}" onclick="setCat('${c}')">${CAT_LABEL[c]}</button>`)
+    .join("");
+}
+function setCat(c) { currentCat = c; newDrill(); }
+
+function newDrill() {
+  stopDrillTimer();
+  buildChips();
+  if (currentCat === "gym") {
+    currentDrill = { name: "Get to the gym", amount: "One real session", cue: pick(MSG.gymNudge), gym: true };
+  } else {
+    const pool = currentCat === "any" ? [...DRILLS.desk, ...DRILLS.floor, ...DRILLS.walk] : DRILLS[currentCat];
+    let d; do { d = pick(pool); } while (pool.length > 1 && currentDrill && d.name === currentDrill.name);
+    currentDrill = d;
+  }
+  $("drill-cat").textContent = CAT_LABEL[currentCat];
+  $("drill-name").textContent = currentDrill.name;
+  $("drill-amount").textContent = currentDrill.amount;
+  $("drill-cue").textContent = fill(currentDrill.cue);
+  $("drill-done-btn").textContent = currentDrill.gym ? "I went. Log the gym session." : "Done. Log it.";
+  const timed = !!currentDrill.secs;
+  $("drill-timer-wrap").style.display = timed ? "block" : "none";
+  if (timed) { $("drill-timer").textContent = fmt(currentDrill.secs); $("drill-timer-btn").textContent = "Start timer"; }
+}
+
+function fmt(s) { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+function startDrillTimer() {
+  if (drillTimer) { stopDrillTimer(); $("drill-timer").textContent = fmt(currentDrill.secs); $("drill-timer-btn").textContent = "Start timer"; return; }
+  const end = Date.now() + currentDrill.secs * 1000;
+  $("drill-timer-btn").textContent = "Reset";
+  drillTimer = setInterval(() => {
+    const left = (end - Date.now()) / 1000;
+    $("drill-timer").textContent = fmt(left);
+    if (left <= 0) { stopDrillTimer(); $("drill-timer").textContent = "Done!"; if (navigator.vibrate) navigator.vibrate(300); }
+  }, 250);
+}
+function stopDrillTimer() { clearInterval(drillTimer); drillTimer = null; }
+
+function drillDone() {
+  const t = todayKey(), d = day(t), before = workoutWon(t);
+  if (currentDrill.gym) d.gym = true; else d.drills = (d.drills || 0) + 1;
+  save();
+  toast(!before && workoutWon(t) ? pick(MSG.dayWon) : pick(MSG.drillDone));
+  newDrill();
+  render();
+}
+
+function toggleGym() {
+  const t = todayKey(), d = day(t), before = workoutWon(t);
+  d.gym = !d.gym; save();
+  if (d.gym) toast(!before ? pick(MSG.dayWon) : "Gym logged. Extra credit. Ghost You can't keep up.");
+  render();
+}
+
+function openExcuses() {
+  $("excuse-roast").style.display = "none";
+  $("excuse-list").style.display = "block";
+  $("excuse-list").innerHTML = EXCUSES.map((e, i) => `<button class="btn-ghost" style="text-align:left" onclick="roast(${i})">"${e.text}"</button>`).join("");
+  openModal("excuse-modal");
+}
+function roast(i) {
+  $("excuse-list").style.display = "none";
+  $("excuse-roast-text").textContent = fill(EXCUSES[i].roast);
+  $("excuse-roast").style.display = "block";
+}
+function skipDrill() { closeModal("excuse-modal"); toast(pick(MSG.skip), true); }
+
+/* =====================================================================
+   ACTIONS: sugar
+   ===================================================================== */
+function setSugar(k, val) {
+  day(k).sugar = val; save();
+  if (k === todayKey()) toast(val === "clean" ? pick(MSG.sugarClean) : pick(MSG.sugarConfess), val !== "clean");
+  else toast(val === "clean" ? "Yesterday logged clean." : "Yesterday logged. Own it and move on.", val !== "clean");
+  headlineFixed = null;
+  render();
+}
+
+let cravingTimer = null, cravingLineTimer = null;
+function openCraving() {
+  const end = Date.now() + 600 * 1000;
+  $("craving-line").textContent = fill(pick(MSG.craving));
+  openModal("craving-modal");
+  clearInterval(cravingTimer); clearInterval(cravingLineTimer);
+  cravingTimer = setInterval(() => {
+    const left = (end - Date.now()) / 1000;
+    $("craving-timer").textContent = fmt(left);
+    if (left <= 0) { clearInterval(cravingTimer); $("craving-timer").textContent = "0:00"; $("craving-line").textContent = "Ten minutes. The craving's gone and you're still standing. Tap 'I beat it.'"; }
+  }, 250);
+  cravingLineTimer = setInterval(() => ($("craving-line").textContent = fill(pick(MSG.craving))), 30000);
+}
+function closeCraving() { clearInterval(cravingTimer); clearInterval(cravingLineTimer); closeModal("craving-modal"); }
+function cravingWin() { day(todayKey()).cravings++; save(); closeCraving(); toast(pick(MSG.cravingWin)); render(); }
+function cravingLoss() { closeCraving(); toast(pick(MSG.cravingLoss), true); }
+
+/* =====================================================================
+   PROGRESS
+   ===================================================================== */
+function logWeight() {
+  const v = parseFloat($("weigh-input").value);
+  if (!v) return toast("Enter a number. Step on the scale. Face it.", true);
+  const t = todayKey();
+  S.weighIns = S.weighIns.filter((w) => w.date !== t);
+  S.weighIns.push({ date: t, weight: v });
+  S.weighIns.sort((a, b) => (a.date < b.date ? -1 : 1));
+  if (S.profile.start == null) S.profile.start = v;
+  save();
+  $("weigh-input").value = "";
+  const prev = S.weighIns[S.weighIns.length - 2];
+  const goingDown = S.profile.goal == null || S.profile.goal < S.profile.start;
+  if (prev && (goingDown ? v < prev.weight : v > prev.weight)) toast("Moving the right way. Keep stacking days.");
+  else if (prev) toast("Scale didn't move the right way. The scale doesn't care about excuses. Neither do I.", true);
+  else toast("First weigh-in logged. Now we have film.");
+  render();
+}
+
+function renderProgress() {
+  const p = S.profile, u = p.unit, w = S.weighIns, last = w[w.length - 1];
+  const current = last ? last.weight : p.start;
+
+  // Weight summary and progress bar
+  if (p.start != null && p.goal != null && current != null) {
+    const total = Math.abs(p.start - p.goal);
+    const done = p.goal < p.start ? p.start - current : current - p.start;
+    const pct = total ? Math.max(0, Math.min(100, (done / total) * 100)) : 0;
+    $("weight-summary").innerHTML = `Start <strong>${p.start}</strong> → Now <strong class="gold">${current}</strong> → Goal <strong>${p.goal}</strong> ${u}<br><span class="small muted">${Math.round(pct)}% of the way. ${Math.abs(current - p.goal).toFixed(1)} ${u} to go.</span>`;
+    $("weight-bar").style.width = pct + "%";
+  } else {
+    $("weight-summary").textContent = "Set your start and goal weight in Setup first.";
+    $("weight-bar").style.width = "0%";
+  }
+  $("weight-chart").innerHTML = w.length >= 2 ? weightChart(w, p.goal) : "";
+
+  if (!last) $("weigh-nag").innerHTML = '<span class="muted">No weigh-ins yet. Pick a day each week, same time, and stick to it.</span>';
+  else {
+    const ago = daysBetween(last.date, todayKey());
+    $("weigh-nag").innerHTML = ago >= 7
+      ? `<span class="red">Last weigh-in was ${ago} days ago. Avoiding the scale won't change it. Step on it.</span>`
+      : `<span class="muted">Last weigh-in: ${ago === 0 ? "today" : ago + " day" + (ago > 1 ? "s" : "") + " ago"}.</span>`;
+  }
+
+  // You vs Ghost You: this week (last 7 days) vs the 7 days before
+  const sum = (from, to, f) => { let n = 0; for (let i = from; i <= to; i++) n += f(offsetKey(-i)); return n; };
+  const rows = [
+    ["Drills", (k) => peek(k).drills || 0],
+    ["Gym sessions", (k) => (peek(k).gym ? 1 : 0)],
+    ["Clean days", (k) => (sugarWon(k) ? 1 : 0)],
+    ["Cravings crushed", (k) => peek(k).cravings || 0]
+  ];
+  let html = '<div class="h"></div><div class="h">You</div><div class="h">Ghost</div>';
+  for (const [label, f] of rows) {
+    const me = sum(0, 6, f), ghost = sum(7, 13, f);
+    const cls = me > ghost ? "green" : me < ghost ? "red" : "";
+    html += `<div>${label}</div><div class="${cls}"><strong>${me}</strong></div><div class="muted">${ghost}</div>`;
+  }
+  $("vs").innerHTML = html;
+
+  // 14-day dots
+  let dots = "<div></div>";
+  for (let i = 13; i >= 0; i--) dots += `<div class="muted" style="text-align:center">${new Date(offsetKey(-i) + "T12:00").toLocaleDateString(undefined, { weekday: "narrow" })}</div>`;
+  const dotRow = (label, cls) => {
+    let r = `<div class="muted">${label}</div>`;
+    for (let i = 13; i >= 0; i--) r += `<div class="dot ${cls(offsetKey(-i))} ${i === 0 ? "today" : ""}"></div>`;
+    return r;
+  };
+  dots += dotRow("Workout", (k) => (workoutWon(k) ? "ok" : (k < todayKey() && S.days[k] ? "bad" : "")));
+  dots += dotRow("No sugar", (k) => (sugarWon(k) ? "ok" : peek(k).sugar === "broke" ? "bad" : ""));
+  $("dots").innerHTML = dots;
+
+  // Records
+  const totalDrills = Object.values(S.days).reduce((a, d) => a + (d.drills || 0), 0);
+  const totalGym = Object.values(S.days).filter((d) => d.gym).length;
+  const totalCravings = Object.values(S.days).reduce((a, d) => a + (d.cravings || 0), 0);
+  $("records").innerHTML = `
+    <div class="vs">
+      <div>Best workout streak</div><div class="gold"><strong>${bestStreak(workoutWon)}</strong></div><div></div>
+      <div>Best no-sugar streak</div><div class="gold"><strong>${bestStreak(sugarWon)}</strong></div><div></div>
+      <div>Total drills</div><div><strong>${totalDrills}</strong></div><div></div>
+      <div>Total gym sessions</div><div><strong>${totalGym}</strong></div><div></div>
+      <div>Cravings crushed</div><div><strong>${totalCravings}</strong></div><div></div>
+    </div>`;
+}
+
+function weightChart(w, goal) {
+  const W = 320, H = 150, pad = 18;
+  const vals = w.map((x) => x.weight).concat(goal != null ? [goal] : []);
+  const min = Math.min(...vals) - 1, max = Math.max(...vals) + 1;
+  const x = (i) => pad + (i * (W - pad * 2)) / (w.length - 1);
+  const y = (v) => pad + ((max - v) * (H - pad * 2)) / (max - min);
+  const pts = w.map((p, i) => `${x(i).toFixed(1)},${y(p.weight).toFixed(1)}`).join(" ");
+  const goalLine = goal != null ? `<line x1="${pad}" x2="${W - pad}" y1="${y(goal)}" y2="${y(goal)}" stroke="#fdb927" stroke-dasharray="4 4" stroke-width="1.5"/><text x="${W - pad}" y="${y(goal) - 5}" fill="#fdb927" font-size="10" text-anchor="end">goal</text>` : "";
+  const circles = w.map((p, i) => `<circle cx="${x(i)}" cy="${y(p.weight)}" r="3.5" fill="#7a3ec2"/>`).join("");
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Weight over time">${goalLine}<polyline points="${pts}" fill="none" stroke="#7a3ec2" stroke-width="2.5" stroke-linejoin="round"/>${circles}</svg>`;
+}
+
+/* =====================================================================
+   SETUP
+   ===================================================================== */
+function fillSetup() {
+  $("set-name").value = S.profile.name || "";
+  $("set-start").value = S.profile.start ?? "";
+  $("set-goal").value = S.profile.goal ?? "";
+  $("set-unit").value = S.profile.unit || "lb";
+}
+function saveProfile() {
+  const num = (v) => (v === "" ? null : parseFloat(v));
+  S.profile = { name: $("set-name").value.trim(), start: num($("set-start").value), goal: num($("set-goal").value), unit: $("set-unit").value };
+  save(); headlineFixed = null;
+  toast("Saved. No more excuses about not being set up.");
+  render();
+}
+
+function renderSetupUrls() {
+  const base = location.origin + location.pathname;
+  const list = [
+    ["9:30 AM", "desk"], ["11:30 AM", "walk"], ["2:00 PM", "desk"], ["4:00 PM", "any"], ["6:00 PM (gym nudge)", "gym"]
+  ];
+  $("reminder-urls").innerHTML = list.map(([time, cat]) => {
+    const u = base + "?drill=" + cat;
+    return `<div style="margin-top:10px"><strong>${time}</strong> <span class="muted small">· ${CAT_LABEL[cat]}</span><div class="url" onclick="copyText('${u}')">${u}</div></div>`;
+  }).join("");
+}
+function copyText(t) {
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => toast("Link copied."), () => toast("Couldn't copy. Press and hold to select it instead."));
+}
+
+function exportData() {
+  const txt = JSON.stringify(S);
+  if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => toast("Backup copied. Paste it into Notes."), () => ($("import-box").value = txt));
+  else $("import-box").value = txt;
+}
+function importData() {
+  try {
+    const d = JSON.parse($("import-box").value);
+    if (!d.days) throw 0;
+    if (!confirm("Replace everything on this phone with this backup?")) return;
+    S = d; save(); fillSetup(); $("import-box").value = ""; toast("Backup restored."); render();
+  } catch (e) { toast("That isn't a valid backup.", true); }
+}
+function resetAll() {
+  if (!confirm("Erase all streaks, weigh-ins, and settings? This can't be undone.")) return;
+  S = { profile: { name: "", start: null, goal: null, unit: "lb" }, days: {}, weighIns: [] };
+  save(); fillSetup(); headlineFixed = null; render(); toast("Wiped clean. Day one starts now.");
+}
+
+/* =====================================================================
+   START
+   ===================================================================== */
+fillSetup();
+buildChips();
+const params = new URLSearchParams(location.search);
+const requested = params.get("drill");
+if (requested && CAT_LABEL[requested]) {
+  currentCat = requested;
+  go("drill");
+  newDrill();
+  if (requested !== "gym") $("drill-sub").textContent = "Your phone buzzed for a reason. Do this one right now.";
+  history.replaceState(null, "", location.pathname); // so a refresh doesn't re-open the drill
+} else {
+  render();
+}
+// The date may change while the app sits open overnight, so refresh when you come back to it.
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { headlineFixed = null; render(); } });
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
